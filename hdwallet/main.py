@@ -1,4 +1,7 @@
+from hdwallet.wallet import WalletFSM
 
 
 def main():
-    pass
+    fsm = WalletFSM()
+    while fsm.current:
+        fsm.run()
