@@ -3,6 +3,7 @@ from typing import Union
 
 from bip32utils import BIP32Key, BIP32_HARDEN
 
+VALID_SEED_HEX = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}", re.I)
 VALID_DERIVATION_PATH = re.compile(r"m(/\d+'?)+")
 
 
@@ -48,17 +49,21 @@ class WalletFSM:
         pass
 
     def _from_seed(self):
-        root_key = None
-        while not root_key:
-            try:
-                seed = bytes.fromhex(input("Please input your seed (in hex format): \n"))
-                root_key = BIP32Key.fromEntropy(seed)
-            except ValueError as ve:
-                print(ve)
-        path = input("Please input the BIP32 derivation path: \n")
+        root_key = BIP32Key.fromEntropy(
+            bytes.fromhex(
+                self.__ask_for(
+                    standard_query="Please input your seed (in hex format): \n",
+                    error_warning="Invalid seed, please enter again: \n",
+                    criterion=VALID_SEED_HEX
+                )
+            )
+        )
         # todo: add default to improve convenience
-        while not VALID_DERIVATION_PATH.fullmatch(path):
-            path = input("Invalid derivation path, please enter again: \n")
+        path = self.__ask_for(
+            standard_query="Please input the BIP32 derivation path: \n",
+            error_warning="Invalid derivation path, please enter again: \n",
+            criterion=VALID_DERIVATION_PATH
+        )
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
         self._key = master_private_key
@@ -94,13 +99,13 @@ class WalletFSM:
         # todo: warning
         print("Your extended private key is: ")
         print(self._key.ExtendedKey(private=True))
-        input("Press any key to return. ")
+        input("Press any key to return\n")
         self._current = self._main_menu
 
     def _get_xpub(self):
         print("Your extended public key is: ")
         print(self._key.ExtendedKey(private=False))
-        input("Press any key to return. ")
+        input("Press any key to return\n")
         self._current = self._main_menu
 
     def _get_addresses_and_balances(self):
@@ -128,3 +133,10 @@ class WalletFSM:
                 index = int(_index)
             key = key.ChildKey(index)
         return key
+
+    @staticmethod
+    def __ask_for(standard_query: str, error_warning: str, criterion: re.Pattern):
+        answer = input(standard_query)
+        while not criterion.fullmatch(answer):
+            answer = input(error_warning)
+        return answer
