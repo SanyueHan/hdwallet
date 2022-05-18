@@ -54,7 +54,7 @@ class WalletFSM:
                 self.__ask_for(
                     standard_query="Please input your seed (in hex format): \n",
                     error_warning="Invalid seed, please enter again: \n",
-                    criterion=VALID_SEED_HEX
+                    criterion=VALID_SEED_HEX.fullmatch
                 )
             )
         )
@@ -62,7 +62,7 @@ class WalletFSM:
         path = self.__ask_for(
             standard_query="Please input the BIP32 derivation path: \n",
             error_warning="Invalid derivation path, please enter again: \n",
-            criterion=VALID_DERIVATION_PATH
+            criterion=VALID_DERIVATION_PATH.fullmatch
         )
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
@@ -135,8 +135,8 @@ class WalletFSM:
         return key
 
     @staticmethod
-    def __ask_for(standard_query: str, error_warning: str, criterion: re.Pattern):
+    def __ask_for(standard_query: str, error_warning: str, criterion):
         answer = input(standard_query)
-        while not criterion.fullmatch(answer):
+        while not criterion(answer):
             answer = input(error_warning)
         return answer
