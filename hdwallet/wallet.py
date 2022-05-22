@@ -2,6 +2,11 @@ import re
 from typing import Union
 
 from bip32utils import BIP32Key, BIP32_HARDEN
+from mnemonic import Mnemonic
+
+
+MNEMO = Mnemonic("english")
+
 
 VALID_SEED_HEX = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}", re.I)
 VALID_DERIVATION_PATH = re.compile(r"m(/\d+'?)+")
@@ -46,7 +51,23 @@ class WalletFSM:
         self._current = choices[choice]
 
     def _from_mnemonic(self):
-        pass
+        mnemonic_words = self.__ask_for(
+            standard_query="Please input your BIP39 mnemonic words: \n",
+            error_warning="Invalid word list, please enter again: \n",
+            criterion=lambda s: True
+        )
+        passphrase = self.__ask_for(
+            standard_query="Please input your passphrase: \n",
+            error_warning="",
+            criterion=lambda s: True
+        )
+        seed = MNEMO.to_seed(mnemonic=mnemonic_words, passphrase=passphrase)
+        root_key = BIP32Key.fromEntropy(seed)
+        path = self.__ask_for_path()
+        master_private_key = self.__get_derivated_key(root_key, path)
+        print("Wallet Created! ")
+        self._key = master_private_key
+        self._current = self._main_menu
 
     def _from_seed(self):
         root_key = BIP32Key.fromEntropy(
