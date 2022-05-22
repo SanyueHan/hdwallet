@@ -58,12 +58,7 @@ class WalletFSM:
                 )
             )
         )
-        # todo: add default to improve convenience
-        path = self.__ask_for(
-            standard_query="Please input the BIP32 derivation path: \n",
-            error_warning="Invalid derivation path, please enter again: \n",
-            criterion=VALID_DERIVATION_PATH.fullmatch
-        )
+        path = self.__ask_for_path()
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
         self._key = master_private_key
@@ -140,3 +135,12 @@ class WalletFSM:
         while not criterion(answer):
             answer = input(error_warning)
         return answer
+
+    @staticmethod
+    def __ask_for_path():
+        # todo: add default to improve convenience
+        return WalletFSM.__ask_for(
+            standard_query="Please input the BIP32 derivation path: \n",
+            error_warning="Invalid derivation path, please enter again: \n",
+            criterion=VALID_DERIVATION_PATH.fullmatch
+        )
