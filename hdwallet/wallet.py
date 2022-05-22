@@ -10,6 +10,8 @@ MNEMO = Mnemonic("english")
 
 VALID_SEED_HEX = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}", re.I)
 VALID_DERIVATION_PATH = re.compile(r"m(/\d+'?)+")
+XPRV = re.compile(r"xprv.+")
+XPUB = re.compile(r"xpub.+")
 
 
 class WalletFSM:
@@ -86,10 +88,30 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _from_xprv(self):
-        pass
+        master_private_key = BIP32Key.fromExtendedKey(
+            xkey=self.__ask_for(
+                standard_query="Please input your extended private key (starts with xprv): \n",
+                error_warning="Invalid xprv, please enter again: \n",
+                criterion=XPRV.fullmatch
+            ),
+            public=False
+        )
+        print("Wallet Created! ")
+        self._key = master_private_key
+        self._current = self._main_menu
 
     def _from_xpub(self):
-        pass
+        master_public_key = BIP32Key.fromExtendedKey(
+            xkey=self.__ask_for(
+                standard_query="Please input your extended public key (starts with xpub): \n",
+                error_warning="Invalid xpub, please enter again: \n",
+                criterion=XPUB.fullmatch
+            ),
+            public=True
+        )
+        print("Wallet Created! ")
+        self._key = master_public_key
+        self._current = self._main_menu
 
     def _main_menu(self):
         print(
