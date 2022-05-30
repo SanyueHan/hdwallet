@@ -1,2 +1,3 @@
 bip32utils~=0.3.post4
+bitsv~=0.11.5
 mnemonic~=0.20

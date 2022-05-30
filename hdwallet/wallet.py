@@ -4,6 +4,8 @@ from typing import Union
 from bip32utils import BIP32Key, BIP32_HARDEN
 from mnemonic import Mnemonic
 
+from hdwallet.private_key import PrvKey
+from hdwallet.public_key import PubKey
 
 MNEMO = Mnemonic("english")
 
@@ -21,8 +23,10 @@ class WalletFSM:
     ADDRESS_DISPLAY_LIMIT = 10
 
     def __init__(self):
-        self._key: Union[BIP32Key, None] = None
         self._current = self._start
+        self.__master_key: Union[BIP32Key, None] = None
+        self.__receive_keys = None
+        self.__change_keys = None
 
     @property
     def current(self):
@@ -68,7 +72,8 @@ class WalletFSM:
         path = self.__ask_for_path()
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
-        self._key = master_private_key
+        self.__master_key = master_private_key
+        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
         self._current = self._main_menu
 
     def _from_seed(self):
@@ -84,7 +89,8 @@ class WalletFSM:
         path = self.__ask_for_path()
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
-        self._key = master_private_key
+        self.__master_key = master_private_key
+        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
         self._current = self._main_menu
 
     def _from_xprv(self):
@@ -97,7 +103,8 @@ class WalletFSM:
             public=False
         )
         print("Wallet Created! ")
-        self._key = master_private_key
+        self.__master_key = master_private_key
+        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
         self._current = self._main_menu
 
     def _from_xpub(self):
@@ -110,7 +117,8 @@ class WalletFSM:
             public=True
         )
         print("Wallet Created! ")
-        self._key = master_public_key
+        self.__master_key = master_public_key
+        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
         self._current = self._main_menu
 
     def _main_menu(self):
@@ -118,14 +126,16 @@ class WalletFSM:
             "Enter 1 to get xprv \n"
             "Enter 2 to get xpub \n"
             "Enter 3 to get addresses and balance \n"
-            "Enter 4 to send bitcoins \n"
+            "Enter 4 to refresh balances \n"
+            "Enter 5 to send bitcoins \n"
             "Enter 0 to go back"
         )
         choices = {
             "1": self._get_xprv,
             "2": self._get_xpub,
             "3": self._get_addresses_and_balances,
-            "4": self._send,
+            "4": self._refresh_balance,
+            "5": self._send,
             "0": self._start
         }
         choice = input()
@@ -136,27 +146,60 @@ class WalletFSM:
     def _get_xprv(self):
         # todo: warning
         print("Your extended private key is: ")
-        print(self._key.ExtendedKey(private=True))
+        print(self.__master_key.ExtendedKey(private=True))
         input("Press any key to return\n")
         self._current = self._main_menu
 
     def _get_xpub(self):
         print("Your extended public key is: ")
-        print(self._key.ExtendedKey(private=False))
+        print(self.__master_key.ExtendedKey(private=False))
         input("Press any key to return\n")
         self._current = self._main_menu
 
     def _get_addresses_and_balances(self):
-        pass
+        print("Receive addresses: ")
+        for key in self.__receive_keys:
+            print(key.address, key.balance)
+        print("Change addresses: ")
+        for key in self.__change_keys:
+            print(key.address, key.balance)
+        input("Press any key to return\n")
+        self._current = self._main_menu
 
     def _send(self):
         pass
+
+    def _refresh_balance(self):
+        for key in self.__receive_keys:
+            key.refresh_unspents()
+        for key in self.__change_keys:
+            key.refresh_unspents()
+        print("Refresh finished. ")
+        self._current = self._main_menu
 
     def _sign(self):
         pass
 
     def _verify(self):
         pass
+
+    def __generate_receive_change_key_chains(self):
+        chains = []
+        for i in range(2):
+            key_chain = []
+            derived_key = self.__master_key.ChildKey(i)
+            for j in range(self.ADDRESS_DISPLAY_LIMIT):
+                child_key = derived_key.ChildKey(j)
+                if child_key.public:
+                    pub = child_key.PublicKey()
+                    pub_key = PubKey(pub)
+                    key_chain.append(pub_key)
+                else:
+                    prv = child_key.PrivateKey()
+                    prv_key = PrvKey(prv)
+                    key_chain.append(prv_key)
+            chains.append(key_chain)
+        return chains
 
     @staticmethod
     def __get_derivated_key(root: BIP32Key, path):
