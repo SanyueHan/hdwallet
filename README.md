@@ -1,5 +1,5 @@
 
-## A Hierarchical Deterministic (HD) Bitcoin wallet
+## hdwallet - Hierarchical Deterministic Wallet
 ```
 Licence: MIT Licence
 Authur: Han Sanyue
@@ -9,7 +9,7 @@ HomePage:
 ```
 
 
-## Getting Started on Windows/Linux/MacOS
+## Getting Started on Windows/Linux/macOS
 ```shell
 pip3 install --user -r requirements.txt
 ```
