@@ -4,6 +4,7 @@ from typing import Union
 from bip32utils import BIP32Key, BIP32_HARDEN
 from mnemonic import Mnemonic
 
+from hdwallet.configs import DERIVATION_ADDRESS_NUMBER
 from hdwallet.private_key import PrvKey
 from hdwallet.public_key import PubKey
 
@@ -20,7 +21,6 @@ class WalletFSM:
     """
     The Business logic of this program is actually a finite state machine.
     """
-    ADDRESS_DISPLAY_LIMIT = 10
 
     def __init__(self):
         self._current = self._start
@@ -188,7 +188,7 @@ class WalletFSM:
         for i in range(2):
             key_chain = []
             derived_key = self.__master_key.ChildKey(i)
-            for j in range(self.ADDRESS_DISPLAY_LIMIT):
+            for j in range(DERIVATION_ADDRESS_NUMBER):
                 child_key = derived_key.ChildKey(j)
                 if child_key.public:
                     pub = child_key.PublicKey()

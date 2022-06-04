@@ -1,0 +1,4 @@
+import os
+
+
+DERIVATION_ADDRESS_NUMBER = int(os.environ.get("DERIVATION_ADDRESS_NUMBER", "10"))
