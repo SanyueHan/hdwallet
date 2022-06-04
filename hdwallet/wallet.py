@@ -1,6 +1,6 @@
 import re
 import itertools
-from typing import Union
+from typing import Union, List
 
 from bip32utils import BIP32Key, BIP32_HARDEN
 from mnemonic import Mnemonic
@@ -26,8 +26,8 @@ class WalletFSM:
     def __init__(self):
         self._current = self._start
         self.__master_key: Union[BIP32Key, None] = None
-        self.__receive_keys = None
-        self.__change_keys = None
+        self.__receive_keys: List[PubKey] = []
+        self.__change_keys: List[PubKey] = []
 
     @property
     def current(self):
@@ -78,7 +78,7 @@ class WalletFSM:
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
         self.__master_key = master_private_key
-        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
+        self.__generate_receive_change_keys()
         self._current = self._main_menu
 
     def _from_seed(self):
@@ -95,7 +95,7 @@ class WalletFSM:
         master_private_key = self.__get_derivated_key(root_key, path)
         print("Wallet Created! ")
         self.__master_key = master_private_key
-        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
+        self.__generate_receive_change_keys()
         self._current = self._main_menu
 
     def _from_xprv(self):
@@ -109,7 +109,7 @@ class WalletFSM:
         )
         print("Wallet Created! ")
         self.__master_key = master_private_key
-        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
+        self.__generate_receive_change_keys()
         self._current = self._main_menu
 
     def _from_xpub(self):
@@ -123,7 +123,7 @@ class WalletFSM:
         )
         print("Wallet Created! ")
         self.__master_key = master_public_key
-        self.__receive_keys, self.__change_keys = self.__generate_receive_change_key_chains()
+        self.__generate_receive_change_keys()
         self._current = self._main_menu
 
     def _main_menu(self):
@@ -209,23 +209,18 @@ class WalletFSM:
             key.refresh_transactions()
         print("Transactions refreshed. ")
 
-    def __generate_receive_change_key_chains(self):
-        chains = []
-        for i in range(2):
-            key_chain = []
+    def __generate_receive_change_keys(self):
+        for i, key_chain in enumerate([self.__receive_keys, self.__change_keys]):
+            key_chain.clear()
             derived_key = self.__master_key.ChildKey(i)
             for j in range(DERIVATION_ADDRESS_NUMBER):
                 child_key = derived_key.ChildKey(j)
                 if child_key.public:
-                    pub = child_key.PublicKey()
-                    pub_key = PubKey(pub)
-                    key_chain.append(pub_key)
+                    pub_key_bytes = child_key.PublicKey()
+                    key_chain.append(PubKey(pub_key_bytes))
                 else:
-                    prv = child_key.PrivateKey()
-                    prv_key = PrvKey(prv)
-                    key_chain.append(prv_key)
-            chains.append(key_chain)
-        return chains
+                    prv_key_bytes = child_key.PrivateKey()
+                    key_chain.append(PrvKey(prv_key_bytes))
 
     @staticmethod
     def __get_derivated_key(root: BIP32Key, path):
