@@ -1,4 +1,5 @@
 import re
+import itertools
 from typing import Union
 
 from bip32utils import BIP32Key, BIP32_HARDEN
@@ -34,6 +35,10 @@ class WalletFSM:
 
     def run(self):
         self._current()
+
+    @property
+    def _all_keys(self):
+        return itertools.chain(self.__receive_keys, self.__change_keys)
 
     def _start(self):
         print(
@@ -126,16 +131,18 @@ class WalletFSM:
             "Enter 1 to get xprv \n"
             "Enter 2 to get xpub \n"
             "Enter 3 to get addresses and balance \n"
-            "Enter 4 to refresh balances \n"
-            "Enter 5 to send bitcoins \n"
+            "Enter 4 to get transactions \n"
+            "Enter 5 to get utxos \n"
+            "Enter 6 to send bitcoins \n"
             "Enter 0 to go back"
         )
         choices = {
             "1": self._get_xprv,
             "2": self._get_xpub,
             "3": self._get_addresses_and_balances,
-            "4": self._refresh_balance,
-            "5": self._send,
+            "4": self._get_transactions,
+            "5": self._get_unspents,
+            "6": self._send,
             "0": self._start
         }
         choice = input()
@@ -157,6 +164,7 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _get_addresses_and_balances(self):
+        self.__refresh_unspents()
         print("Receive addresses: ")
         for key in self.__receive_keys:
             print(key.address, key.balance)
@@ -166,22 +174,40 @@ class WalletFSM:
         input("Press any key to return\n")
         self._current = self._main_menu
 
+    def _get_transactions(self):
+        self.__refresh_transactions()
+        for key in self._all_keys:
+            for tx in key.transactions:
+                print(tx)
+        input("Press any key to return\n")
+        self._current = self._main_menu
+
+    def _get_unspents(self):
+        self.__refresh_unspents()
+        for key in self._all_keys:
+            for usp in key.unspents:
+                print(usp)
+        input("Press any key to return\n")
+        self._current = self._main_menu
+
     def _send(self):
         pass
-
-    def _refresh_balance(self):
-        for key in self.__receive_keys:
-            key.refresh_unspents()
-        for key in self.__change_keys:
-            key.refresh_unspents()
-        print("Refresh finished. ")
-        self._current = self._main_menu
 
     def _sign(self):
         pass
 
     def _verify(self):
         pass
+
+    def __refresh_unspents(self):
+        for key in self._all_keys:
+            key.refresh_unspents()
+        print("Unspents refreshed. ")
+
+    def __refresh_transactions(self):
+        for key in self._all_keys:
+            key.refresh_transactions()
+        print("Transactions refreshed. ")
 
     def __generate_receive_change_key_chains(self):
         chains = []
