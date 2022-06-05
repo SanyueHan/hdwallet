@@ -1,3 +1,4 @@
 bip32utils~=0.3.post4
 bitsv~=0.11.5
 mnemonic~=0.20
+coincurve~=17.0.0

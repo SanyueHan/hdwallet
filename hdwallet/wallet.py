@@ -6,8 +6,7 @@ from bip32utils import BIP32Key, BIP32_HARDEN
 from mnemonic import Mnemonic
 
 from hdwallet.configs import DERIVATION_ADDRESS_NUMBER
-from hdwallet.private_key import PrvKey
-from hdwallet.public_key import PubKey
+from hdwallet.key import Key
 
 MNEMO = Mnemonic("english")
 
@@ -26,8 +25,8 @@ class WalletFSM:
     def __init__(self):
         self._current = self._start
         self.__master_key: Union[BIP32Key, None] = None
-        self.__receive_keys: Dict[str, PubKey] = {}
-        self.__change_keys: Dict[str, PubKey] = {}
+        self.__receive_keys: Dict[str, Key] = {}
+        self.__change_keys: Dict[str, Key] = {}
 
     @property
     def current(self):
@@ -42,11 +41,11 @@ class WalletFSM:
 
     def _start(self):
         print(
-            "Welcome to HDWallet! \n"
-            "Enter 1 to generate wallet from mnemonic \n"
-            "Enter 2 to generate wallet from a seed (in hex format) \n"
-            "Enter 3 to generate wallet from extended private key \n"
-            "Enter 4 to generate wallet from extended public key (create a watch wallet) \n"
+            "Welcome to HDWallet!\n"
+            "Enter 1 to generate wallet from mnemonic\n"
+            "Enter 2 to generate wallet from a seed (in hex format)\n"
+            "Enter 3 to generate wallet from extended private key\n"
+            "Enter 4 to generate wallet from extended public key (create a watch wallet)\n"
             "Enter 0 to exit"
         )
         choices = {
@@ -128,12 +127,13 @@ class WalletFSM:
 
     def _main_menu(self):
         print(
-            "Enter 1 to get xprv \n"
-            "Enter 2 to get xpub \n"
-            "Enter 3 to get addresses and balance \n"
-            "Enter 4 to get transactions \n"
-            "Enter 5 to get utxos \n"
-            "Enter 6 to send bitcoins \n"
+            "Enter 1 to get xprv\n"
+            "Enter 2 to get xpub\n"
+            "Enter 3 to get addresses and balance\n"
+            "Enter 4 to get transactions\n"
+            "Enter 5 to get utxos\n"
+            "Enter 6 to receive bitcoins\n"
+            "Enter 7 to send bitcoins\n"
             "Enter 0 to go back"
         )
         choices = {
@@ -142,7 +142,8 @@ class WalletFSM:
             "3": self._get_addresses_and_balances,
             "4": self._get_transactions,
             "5": self._get_unspents,
-            "6": self._send,
+            "6": self._receive,
+            "7": self._send,
             "0": self._start
         }
         choice = input()
@@ -151,7 +152,7 @@ class WalletFSM:
         self._current = choices[choice]
 
     def _get_xprv(self):
-        # todo: warning
+        # todo: warning and confirmation
         print("Your extended private key is: ")
         print(self.__master_key.ExtendedKey(private=True))
         input("Press any key to return\n")
@@ -190,13 +191,41 @@ class WalletFSM:
         input("Press any key to return\n")
         self._current = self._main_menu
 
-    def _send(self):
+    def _receive(self):
         pass
+
+    def _send(self):
+        dst_addr = input("Please input the destination address: \n")
+        src_addr = self.__ask_for(
+            standard_query="Please input your source address \n",
+            error_warning="This is not one of your address, please enter again: \n",
+            criterion=lambda s: s in self.__receive_keys or s in self.__change_keys
+        )
+        if src_addr:
+            self.__send_from(src_addr, dst_addr)
+        # todo: support combination payment in the other branch
+        # else:
+        #     self.__send_to()
+        input("Press any key to return\n")
+        self._current = self._main_menu
 
     def _sign(self):
         pass
 
     def _verify(self):
+        pass
+
+    def __send_from(self, src, dst):
+        key = self[src]
+        amount = self.__ask_for(
+            "Please input the amount to send \n",
+            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address",
+            criterion=lambda a: True,
+        )
+        txid = key.send([(dst, amount, 'satoshi')])
+        print(f"Successfully sent {amount} satoshi to {dst}, transaction id is: {txid}")
+
+    def __send_to(self, dst):
         pass
 
     def __refresh_unspents(self):
@@ -217,10 +246,10 @@ class WalletFSM:
                 child_key = derived_key.ChildKey(j)
                 if child_key.public:
                     pub_key_bytes = child_key.PublicKey()
-                    key_chain[child_key.Address()] = PubKey(pub_key_bytes)
+                    key_chain[child_key.Address()] = Key(pub_key_bytes, is_public=True)
                 else:
                     prv_key_bytes = child_key.PrivateKey()
-                    key_chain[child_key.Address()] = PrvKey(prv_key_bytes)
+                    key_chain[child_key.Address()] = Key(prv_key_bytes, is_public=False)
 
     @staticmethod
     def __get_derivated_key(root: BIP32Key, path):
@@ -251,3 +280,10 @@ class WalletFSM:
             error_warning="Invalid derivation path, please enter again: \n",
             criterion=VALID_DERIVATION_PATH.fullmatch
         )
+
+    def __getitem__(self, addr) -> Key:
+        if key := self.__receive_keys.get(addr):
+            return key
+        if key := self.__change_keys.get(addr):
+            return key
+        raise KeyError
