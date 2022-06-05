@@ -1,6 +1,6 @@
 import re
 import itertools
-from typing import Union, List
+from typing import Union, Dict
 
 from bip32utils import BIP32Key, BIP32_HARDEN
 from mnemonic import Mnemonic
@@ -26,8 +26,8 @@ class WalletFSM:
     def __init__(self):
         self._current = self._start
         self.__master_key: Union[BIP32Key, None] = None
-        self.__receive_keys: List[PubKey] = []
-        self.__change_keys: List[PubKey] = []
+        self.__receive_keys: Dict[str, PubKey] = {}
+        self.__change_keys: Dict[str, PubKey] = {}
 
     @property
     def current(self):
@@ -38,7 +38,7 @@ class WalletFSM:
 
     @property
     def _all_keys(self):
-        return itertools.chain(self.__receive_keys, self.__change_keys)
+        return itertools.chain(self.__receive_keys.values(), self.__change_keys.values())
 
     def _start(self):
         print(
@@ -166,11 +166,11 @@ class WalletFSM:
     def _get_addresses_and_balances(self):
         self.__refresh_unspents()
         print("Receive addresses: ")
-        for key in self.__receive_keys:
-            print(key.address, key.balance)
+        for addr, key in self.__receive_keys.items():
+            print(addr, key.balance)
         print("Change addresses: ")
-        for key in self.__change_keys:
-            print(key.address, key.balance)
+        for addr, key in self.__change_keys.items():
+            print(addr, key.balance)
         input("Press any key to return\n")
         self._current = self._main_menu
 
@@ -217,10 +217,10 @@ class WalletFSM:
                 child_key = derived_key.ChildKey(j)
                 if child_key.public:
                     pub_key_bytes = child_key.PublicKey()
-                    key_chain.append(PubKey(pub_key_bytes))
+                    key_chain[child_key.Address()] = PubKey(pub_key_bytes)
                 else:
                     prv_key_bytes = child_key.PrivateKey()
-                    key_chain.append(PrvKey(prv_key_bytes))
+                    key_chain[child_key.Address()] = PrvKey(prv_key_bytes)
 
     @staticmethod
     def __get_derivated_key(root: BIP32Key, path):
