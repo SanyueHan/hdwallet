@@ -126,26 +126,27 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _main_menu(self):
-        print(
-            "Enter 1 to get xprv\n"
-            "Enter 2 to get xpub\n"
-            "Enter 3 to get addresses and balance\n"
-            "Enter 4 to get transactions\n"
-            "Enter 5 to get utxos\n"
-            "Enter 6 to receive bitcoins\n"
-            "Enter 7 to send bitcoins\n"
-            "Enter 0 to go back"
-        )
+        print("Enter 0 to go back")
+        if not self.__master_key.public:
+            print("Enter 1 to get xprv")
+        print("Enter 2 to get xpub")
+        print("Enter 3 to get addresses and balance")
+        print("Enter 4 to get transactions")
+        print("Enter 5 to get utxos")
+        print("Enter 6 to receive bitcoins")
+        if not self.__master_key.public:
+            print("Enter 7 to send bitcoins")
         choices = {
-            "1": self._get_xprv,
+            "0": self._start,
             "2": self._get_xpub,
             "3": self._get_addresses_and_balances,
             "4": self._get_transactions,
             "5": self._get_unspents,
             "6": self._receive,
-            "7": self._send,
-            "0": self._start
         }
+        if not self.__master_key.public:
+            choices["1"] = self._get_xprv
+            choices["7"] = self._send,
         choice = input()
         while choice not in choices:
             choice = input("invalid choice, please enter again: \n")
