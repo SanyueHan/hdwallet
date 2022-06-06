@@ -1,0 +1,4 @@
+
+
+class PubKeyUsedAsPrvKeyError(ValueError):
+    pass

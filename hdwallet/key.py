@@ -5,7 +5,17 @@ from bitsv.transaction import OP_DUP, OP_HASH160, OP_PUSH_20, OP_EQUALVERIFY, OP
     calc_txid, create_p2pkh_transaction, sanitize_tx_data
 from coincurve import PublicKey, PrivateKey
 
+from hdwallet.errors import PubKeyUsedAsPrvKeyError
 from hdwallet.network import NETWORK_API
+
+
+def ensure_private(method):
+    def method_with_check(self, *args, **kwargs):
+        if self._prv_key:
+            return method(self, *args, **kwargs)
+        else:
+            raise PubKeyUsedAsPrvKeyError
+    return method_with_check
 
 
 class Key:
@@ -75,6 +85,7 @@ class Key:
         """
         return self._pub_key.verify(signature, data)
 
+    @ensure_private
     def sign(self, data):
         """Signs some data which can be verified later by others using
         the public key.
@@ -86,6 +97,7 @@ class Key:
         """
         return self._prv_key.sign(data)
 
+    @ensure_private
     def send(self, outputs, fee=None, leftover=None, combine=True,
              message=None, unspents=None, custom_pushdata=False):  # pragma: no cover
         """Creates a signed P2PKH transaction and attempts to broadcast it on
