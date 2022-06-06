@@ -146,7 +146,7 @@ class WalletFSM:
         }
         if not self.__master_key.public:
             choices["1"] = self._get_xprv
-            choices["7"] = self._send,
+            choices["7"] = self._send
         choice = input()
         while choice not in choices:
             choice = input("invalid choice, please enter again: \n")
