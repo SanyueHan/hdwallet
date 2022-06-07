@@ -220,8 +220,8 @@ class WalletFSM:
         key = self[src]
         amount = self.__ask_for(
             "Please input the amount to send \n",
-            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address",
-            criterion=lambda a: True,
+            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address. Please Enter again: \n",
+            criterion=lambda a: int(a) < key.balance,
         )
         txid = key.send([(dst, amount, 'satoshi')])
         print(f"Successfully sent {amount} satoshi to {dst}, transaction id is: {txid}")
