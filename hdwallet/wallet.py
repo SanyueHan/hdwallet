@@ -130,23 +130,27 @@ class WalletFSM:
         if not self.__master_key.public:
             print("Enter 1 to get xprv")
         print("Enter 2 to get xpub")
-        print("Enter 3 to get addresses and balance")
-        print("Enter 4 to get transactions")
-        print("Enter 5 to get utxos")
-        print("Enter 6 to receive bitcoins")
+        print("Enter 3 to get transactions")
+        print("Enter 4 to get unspent transactions")
+        print("Enter 5 to get addresses and balances")
+        print("Enter 6 to refresh transactions")
+        print("Enter 7 to refresh unspent transactions")
+        print("Enter 8 to receive bitcoins")
         if not self.__master_key.public:
-            print("Enter 7 to send bitcoins")
+            print("Enter 9 to send bitcoins")
         choices = {
             "0": self._start,
             "2": self._get_xpub,
-            "3": self._get_addresses_and_balances,
+            "3": self._get_unspents,
             "4": self._get_transactions,
-            "5": self._get_unspents,
-            "6": self._receive,
+            "5": self._get_addresses_and_balances,
+            "6": self._refresh_transactions,
+            "7": self._refresh_unspents,
+            "8": self._receive,
         }
         if not self.__master_key.public:
             choices["1"] = self._get_xprv
-            choices["7"] = self._send
+            choices["9"] = self._send
         choice = input()
         while choice not in choices:
             choice = input("invalid choice, please enter again: \n")
@@ -166,7 +170,6 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _get_addresses_and_balances(self):
-        self.__refresh_unspents()
         print("Receive addresses: ")
         for addr, key in self.__receive_keys.items():
             print(addr, key.balance)
@@ -177,7 +180,6 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _get_transactions(self):
-        self.__refresh_transactions()
         for key in self._all_keys:
             for tx in key.transactions:
                 print(tx)
@@ -185,12 +187,27 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _get_unspents(self):
-        self.__refresh_unspents()
         for key in self._all_keys:
             for usp in key.unspents:
                 print(usp)
         input("Press any key to return\n")
         self._current = self._main_menu
+
+    def _refresh_transactions(self):
+        for key in self._all_keys:
+            key.refresh_transactions()
+        print("Transactions refreshed. ")
+
+    def _refresh_unspents(self):
+        for key in self._all_keys:
+            key.refresh_unspents()
+        print("Unspents refreshed. ")
+
+    def _sign(self):
+        pass
+
+    def _verify(self):
+        pass
 
     def _receive(self):
         pass
@@ -210,12 +227,6 @@ class WalletFSM:
         input("Press any key to return\n")
         self._current = self._main_menu
 
-    def _sign(self):
-        pass
-
-    def _verify(self):
-        pass
-
     def __send_from(self, src, dst):
         key = self[src]
         amount = self.__ask_for(
@@ -228,16 +239,6 @@ class WalletFSM:
 
     def __send_to(self, dst):
         pass
-
-    def __refresh_unspents(self):
-        for key in self._all_keys:
-            key.refresh_unspents()
-        print("Unspents refreshed. ")
-
-    def __refresh_transactions(self):
-        for key in self._all_keys:
-            key.refresh_transactions()
-        print("Transactions refreshed. ")
 
     def __generate_receive_change_keys(self):
         for i, key_chain in enumerate([self.__receive_keys, self.__change_keys]):
