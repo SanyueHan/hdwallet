@@ -1,10 +1,14 @@
+import json
+import os
 from typing import Union
 
 from bitsv.format import public_key_to_address, address_to_public_key_hash
+from bitsv.network.meta import Unspent
 from bitsv.transaction import OP_DUP, OP_HASH160, OP_PUSH_20, OP_EQUALVERIFY, OP_CHECKSIG, \
     calc_txid, create_p2pkh_transaction, sanitize_tx_data
 from coincurve import PublicKey, PrivateKey
 
+from hdwallet.configs import USP_CACHE_DIR
 from hdwallet.errors import PubKeyUsedAsPrvKeyError
 from hdwallet.network import NETWORK_API
 
@@ -32,8 +36,8 @@ class Key:
             self._pub_key = self._prv_key.public_key
             self._address = public_key_to_address(self._pub_key.format())
         self._scriptcode: bytes = (OP_DUP + OP_HASH160 + OP_PUSH_20 + address_to_public_key_hash(self.address) + OP_EQUALVERIFY + OP_CHECKSIG)
-        self._unspents = []
-        self._transactions = []
+        self._transactions = self._load_transactions()
+        self._unspents = self._load_unspents()
 
     @property
     def is_private(self):
@@ -70,9 +74,11 @@ class Key:
 
     def refresh_unspents(self):
         self._unspents = NETWORK_API.get_unspents(self._address)
+        self._dump_unspents()
 
     def refresh_transactions(self):
         self._transactions = NETWORK_API.get_transactions(self._address)
+        self._dump_transactions()
 
     def verify(self, signature, data):
         """Verifies some data was signed by this private key.
@@ -194,3 +200,22 @@ class Key:
         )
 
         return create_p2pkh_transaction(self, unspents, outputs, custom_pushdata=custom_pushdata)
+
+    def _load_transactions(self):
+        return []
+
+    def _dump_transactions(self):
+        pass
+
+    def _load_unspents(self):
+        try:
+            with open(USP_CACHE_DIR + self._address, "r") as usp_cache:
+                return [Unspent.from_dict(usp_dict) for usp_dict in json.load(usp_cache)]
+        except FileNotFoundError:
+            return []
+
+    def _dump_unspents(self):
+        if not os.path.exists(USP_CACHE_DIR):
+            os.makedirs(USP_CACHE_DIR)
+        with open(USP_CACHE_DIR + self._address, "w") as usp_cache:
+            json.dump([usp.to_dict() for usp in self._unspents], usp_cache)
