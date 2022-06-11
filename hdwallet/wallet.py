@@ -141,8 +141,8 @@ class WalletFSM:
         choices = {
             "0": self._start,
             "2": self._get_xpub,
-            "3": self._get_unspents,
-            "4": self._get_transactions,
+            "3": self._get_transactions,
+            "4": self._get_unspents,
             "5": self._get_addresses_and_balances,
             "6": self._refresh_transactions,
             "7": self._refresh_unspents,
