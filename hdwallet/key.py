@@ -74,11 +74,13 @@ class Key:
 
     def refresh_unspents(self):
         self._unspents = NETWORK_API.get_unspents(self._address)
-        self._dump_unspents()
+        if self._unspents:
+            self._dump_unspents()
 
     def refresh_transactions(self):
         self._transactions = NETWORK_API.get_transactions(self._address)
-        self._dump_transactions()
+        if self._transactions:
+            self._dump_transactions()
 
     def verify(self, signature, data):
         """Verifies some data was signed by this private key.
@@ -215,7 +217,6 @@ class Key:
             return []
 
     def _dump_unspents(self):
-        if not os.path.exists(USP_CACHE_DIR):
-            os.makedirs(USP_CACHE_DIR)
+        os.makedirs(USP_CACHE_DIR, exist_ok=True)
         with open(USP_CACHE_DIR + self._address, "w") as usp_cache:
             json.dump([usp.to_dict() for usp in self._unspents], usp_cache)

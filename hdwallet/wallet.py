@@ -197,12 +197,14 @@ class WalletFSM:
         for key in self._all_keys:
             key.refresh_transactions()
         print("Transactions refreshed. ")
+        input("Press any key to return\n")
         self._current = self._main_menu
 
     def _refresh_unspents(self):
         for key in self._all_keys:
             key.refresh_unspents()
         print("Unspents refreshed. ")
+        input("Press any key to return\n")
         self._current = self._main_menu
 
     def _sign(self):
