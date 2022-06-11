@@ -1,9 +1,10 @@
 import json
 import os
-from typing import Union
+from typing import Union, List
 
 from bitsv.format import public_key_to_address, address_to_public_key_hash
 from bitsv.network.meta import Unspent
+from bitsv.network.transaction import Transaction
 from bitsv.transaction import OP_DUP, OP_HASH160, OP_PUSH_20, OP_EQUALVERIFY, OP_CHECKSIG, \
     calc_txid, create_p2pkh_transaction, sanitize_tx_data
 from coincurve import PublicKey, PrivateKey
@@ -36,8 +37,8 @@ class Key:
             self._pub_key = self._prv_key.public_key
             self._address = public_key_to_address(self._pub_key.format())
         self._scriptcode: bytes = (OP_DUP + OP_HASH160 + OP_PUSH_20 + address_to_public_key_hash(self.address) + OP_EQUALVERIFY + OP_CHECKSIG)
-        self._transactions = self._load_transactions()
-        self._unspents = self._load_unspents()
+        self._transactions: List[Transaction] = self._load_transactions()
+        self._unspents: List[Unspent] = self._load_unspents()
 
     @property
     def is_private(self):
@@ -78,7 +79,7 @@ class Key:
             self._dump_unspents()
 
     def refresh_transactions(self):
-        self._transactions = NETWORK_API.get_transactions(self._address)
+        self._transactions = [NETWORK_API.get_transaction(_id) for _id in NETWORK_API.get_transactions(self._address)]
         if self._transactions:
             self._dump_transactions()
 
