@@ -74,11 +74,13 @@ class Key:
         return self._transactions
 
     def refresh_unspents(self):
+        print(f"querying {self._address} unspents")
         self._unspents = NETWORK_API.get_unspents(self._address)
         if self._unspents:
             self._dump_unspents()
 
     def refresh_transactions(self):
+        print(f"querying {self._address} transactions")
         self._transactions = [NETWORK_API.get_transaction(_id) for _id in NETWORK_API.get_transactions(self._address)]
         if self._transactions:
             self._dump_transactions()
