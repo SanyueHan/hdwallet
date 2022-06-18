@@ -7,6 +7,7 @@ from mnemonic import Mnemonic
 
 from hdwallet.configs import DERIVATION_ADDRESS_NUMBER
 from hdwallet.key import Key
+from hdwallet.utils import multithreading_execute
 
 MNEMO = Mnemonic("english")
 
@@ -194,15 +195,13 @@ class WalletFSM:
         self._current = self._main_menu
 
     def _refresh_transactions(self):
-        for key in self._all_keys:
-            key.refresh_transactions()
+        multithreading_execute([key.refresh_transactions for key in self._all_keys])
         print("Transactions refreshed. ")
         input("Press any key to return\n")
         self._current = self._main_menu
 
     def _refresh_unspents(self):
-        for key in self._all_keys:
-            key.refresh_unspents()
+        multithreading_execute([key.refresh_unspents for key in self._all_keys])
         print("Unspents refreshed. ")
         input("Press any key to return\n")
         self._current = self._main_menu
