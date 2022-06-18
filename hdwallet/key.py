@@ -220,4 +220,4 @@ class Key:
     def _dump_unspents(self):
         os.makedirs(USP_CACHE_DIR, exist_ok=True)
         with open(USP_CACHE_DIR + self._address, "w") as usp_cache:
-            json.dump([usp.to_dict() for usp in self._unspents], usp_cache)
+            json.dump([usp.to_dict() for usp in self._unspents], fp=usp_cache, indent=4)
