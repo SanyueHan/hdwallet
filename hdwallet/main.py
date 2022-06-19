@@ -1,7 +1,7 @@
-from hdwallet.wallet import WalletFSM
+from hdwallet.terminal import TerminalFSM as Machine
 
 
 def main():
-    fsm = WalletFSM()
+    fsm = Machine()
     while fsm.current:
         fsm.run()
