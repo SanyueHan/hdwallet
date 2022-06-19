@@ -1,13 +1,7 @@
-import re
 from typing import Union
 
 from hdwallet.core.wallet import Wallet
-
-
-VALID_SEED_HEX = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}", re.I)
-VALID_DERIVATION_PATH = re.compile(r"m(/\d+'?)+")
-XPRV = re.compile(r"xprv.+")
-XPUB = re.compile(r"xpub.+")
+from hdwallet.inputs import Inputs
 
 
 class TerminalFSM:
@@ -68,7 +62,7 @@ class TerminalFSM:
         valid_seed = self.__ask_for(
             standard_query="Please input your seed (in hex format): \n",
             error_warning="Invalid seed, please enter again: \n",
-            criterion=VALID_SEED_HEX.fullmatch
+            criterion=Inputs.SEED.criterion
         )
         valid_path = self.__ask_for_path()
         self._wallet = Wallet.from_seed(bytes.fromhex(valid_seed), valid_path)
@@ -79,7 +73,7 @@ class TerminalFSM:
         valid_xprv = self.__ask_for(
             standard_query="Please input your extended private key (starts with xprv): \n",
             error_warning="Invalid xprv, please enter again: \n",
-            criterion=XPRV.fullmatch
+            criterion=Inputs.XPRV.criterion
         )
         self._wallet = Wallet.from_xprv(valid_xprv)
         print("Wallet Created! ")
@@ -89,7 +83,7 @@ class TerminalFSM:
         valid_xpub = self.__ask_for(
             standard_query="Please input your extended public key (starts with xpub): \n",
             error_warning="Invalid xpub, please enter again: \n",
-            criterion=XPUB.fullmatch
+            criterion=Inputs.XPUB.criterion
         )
         self._wallet = Wallet.from_xpub(valid_xpub)
         print("Wallet Created! ")
@@ -212,5 +206,5 @@ class TerminalFSM:
         return TerminalFSM.__ask_for(
             standard_query="Please input the BIP32 derivation path: \n",
             error_warning="Invalid derivation path, please enter again: \n",
-            criterion=VALID_DERIVATION_PATH.fullmatch
+            criterion=Inputs.PATH.criterion
         )
