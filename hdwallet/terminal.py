@@ -1,13 +1,8 @@
 import re
 from typing import Union
 
-from bip32utils import BIP32Key
-from mnemonic import Mnemonic
-
 from hdwallet.core.wallet import Wallet
 
-
-MNEMO = Mnemonic("english")
 
 VALID_SEED_HEX = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}", re.I)
 VALID_DERIVATION_PATH = re.compile(r"m(/\d+'?)+")
@@ -54,64 +49,50 @@ class TerminalFSM:
         self._current = choices[choice]
 
     def _from_mnemonic(self):
-        mnemonic_words = self.__ask_for(
+        valid_mnemonic_words = self.__ask_for(
             standard_query="Please input your BIP39 mnemonic words: \n",
             error_warning="Invalid word list, please enter again: \n",
             criterion=lambda s: True
         )
-        passphrase = self.__ask_for(
+        valid_passphrase = self.__ask_for(
             standard_query="Please input your passphrase: \n",
             error_warning="",
             criterion=lambda s: True
         )
-        seed = MNEMO.to_seed(mnemonic=mnemonic_words, passphrase=passphrase)
-        root_key = BIP32Key.fromEntropy(seed)
-        path = self.__ask_for_path()
-        master_private_key = Wallet.get_derivated_key(root_key, path)
+        valid_path = self.__ask_for_path()
+        self._wallet = Wallet.from_mnemonic(valid_mnemonic_words, valid_passphrase, valid_path)
         print("Wallet Created! ")
-        self._wallet = Wallet(master_private_key)
         self._current = self._main_menu
 
     def _from_seed(self):
-        root_key = BIP32Key.fromEntropy(
-            bytes.fromhex(
-                self.__ask_for(
-                    standard_query="Please input your seed (in hex format): \n",
-                    error_warning="Invalid seed, please enter again: \n",
-                    criterion=VALID_SEED_HEX.fullmatch
-                )
-            )
+        valid_seed = self.__ask_for(
+            standard_query="Please input your seed (in hex format): \n",
+            error_warning="Invalid seed, please enter again: \n",
+            criterion=VALID_SEED_HEX.fullmatch
         )
-        path = self.__ask_for_path()
-        master_private_key = Wallet.get_derivated_key(root_key, path)
+        valid_path = self.__ask_for_path()
+        self._wallet = Wallet.from_seed(bytes.fromhex(valid_seed), valid_path)
         print("Wallet Created! ")
-        self._wallet = Wallet(master_private_key)
         self._current = self._main_menu
 
     def _from_xprv(self):
-        master_private_key = BIP32Key.fromExtendedKey(
-            xkey=self.__ask_for(
-                standard_query="Please input your extended private key (starts with xprv): \n",
-                error_warning="Invalid xprv, please enter again: \n",
-                criterion=XPRV.fullmatch
-            ),
-            public=False
+        valid_xprv = self.__ask_for(
+            standard_query="Please input your extended private key (starts with xprv): \n",
+            error_warning="Invalid xprv, please enter again: \n",
+            criterion=XPRV.fullmatch
         )
+        self._wallet = Wallet.from_xprv(valid_xprv)
         print("Wallet Created! ")
-        self._wallet = Wallet(master_private_key)
         self._current = self._main_menu
 
     def _from_xpub(self):
-        master_public_key = BIP32Key.fromExtendedKey(
-            xkey=self.__ask_for(
-                standard_query="Please input your extended public key (starts with xpub): \n",
-                error_warning="Invalid xpub, please enter again: \n",
-                criterion=XPUB.fullmatch
-            ),
-            public=True
+        valid_xpub = self.__ask_for(
+            standard_query="Please input your extended public key (starts with xpub): \n",
+            error_warning="Invalid xpub, please enter again: \n",
+            criterion=XPUB.fullmatch
         )
+        self._wallet = Wallet.from_xpub(valid_xpub)
         print("Wallet Created! ")
-        self._wallet = Wallet(master_public_key)
         self._current = self._main_menu
 
     def _main_menu(self):
