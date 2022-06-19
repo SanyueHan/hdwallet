@@ -57,8 +57,16 @@ class Wallet:
         return self.__change_keys
 
     @property
-    def all_keys(self):
+    def __all_keys(self):
         return itertools.chain(self.__receive_keys.values(), self.__change_keys.values())
+
+    @property
+    def transactions(self):
+        return sum([key.transactions for key in self.__all_keys], [])
+
+    @property
+    def unspents(self):
+        return sum([key.unspents for key in self.__all_keys], [])
 
     @staticmethod
     def get_derivated_key(root: BIP32Key, path):
@@ -75,7 +83,7 @@ class Wallet:
         return key
 
     def refresh_transactions(self):
-        multithreading_execute([key.refresh_transactions for key in self.all_keys])
+        multithreading_execute([key.refresh_transactions for key in self.__all_keys])
 
     def refresh_unspents(self):
-        multithreading_execute([key.refresh_unspents for key in self.all_keys])
+        multithreading_execute([key.refresh_unspents for key in self.__all_keys])

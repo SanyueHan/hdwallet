@@ -167,16 +167,14 @@ class TerminalFSM:
         self._current = self._main_menu
 
     def _get_transactions(self):
-        for key in self._wallet.all_keys:
-            for tx in key.transactions:
-                print(tx)
+        for tx in self._wallet.transactions:
+            print(tx)
         input("Press any key to return\n")
         self._current = self._main_menu
 
     def _get_unspents(self):
-        for key in self._wallet.all_keys:
-            for usp in key.unspents:
-                print(usp)
+        for usp in self._wallet.unspents:
+            print(usp)
         input("Press any key to return\n")
         self._current = self._main_menu
 
