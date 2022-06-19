@@ -37,22 +37,18 @@ class TerminalFSM:
             '4': self._from_xpub,
             '0': None
         }
-        choice = input()
-        while choice not in choices:
-            choice = input("invalid choice, please enter again: \n")
+        choice = self.__ask_for(
+            error_message="Invalid choice, please input again: \n",
+            criterion=lambda c: c in choices
+        )
         self._current = choices[choice]
 
     def _from_mnemonic(self):
         valid_mnemonic_words = self.__ask_for(
-            standard_query="Please input your BIP39 mnemonic words: \n",
-            error_warning="Invalid word list, please enter again: \n",
-            criterion=lambda s: True
+            query_message="Please input your BIP39 mnemonic words: \n",
+            error_message="Invalid word list, please input again: \n",
         )
-        valid_passphrase = self.__ask_for(
-            standard_query="Please input your passphrase: \n",
-            error_warning="",
-            criterion=lambda s: True
-        )
+        valid_passphrase = self.__ask_for("Please input your passphrase: \n")
         valid_path = self.__ask_for_path()
         self._wallet = Wallet.from_mnemonic(valid_mnemonic_words, valid_passphrase, valid_path)
         print("Wallet Created! ")
@@ -60,8 +56,8 @@ class TerminalFSM:
 
     def _from_seed(self):
         valid_seed = self.__ask_for(
-            standard_query="Please input your seed (in hex format): \n",
-            error_warning="Invalid seed, please enter again: \n",
+            query_message="Please input your seed (in hex format): \n",
+            error_message="Invalid seed, please input again: \n",
             criterion=Inputs.SEED.criterion
         )
         valid_path = self.__ask_for_path()
@@ -71,8 +67,8 @@ class TerminalFSM:
 
     def _from_xprv(self):
         valid_xprv = self.__ask_for(
-            standard_query="Please input your extended private key (starts with xprv): \n",
-            error_warning="Invalid xprv, please enter again: \n",
+            query_message="Please input your extended private key (starts with xprv): \n",
+            error_message="Invalid xprv, please input again: \n",
             criterion=Inputs.XPRV.criterion
         )
         self._wallet = Wallet.from_xprv(valid_xprv)
@@ -81,8 +77,8 @@ class TerminalFSM:
 
     def _from_xpub(self):
         valid_xpub = self.__ask_for(
-            standard_query="Please input your extended public key (starts with xpub): \n",
-            error_warning="Invalid xpub, please enter again: \n",
+            query_message="Please input your extended public key (starts with xpub): \n",
+            error_message="Invalid xpub, please input again: \n",
             criterion=Inputs.XPUB.criterion
         )
         self._wallet = Wallet.from_xpub(valid_xpub)
@@ -113,9 +109,10 @@ class TerminalFSM:
         if self._wallet.is_private:
             choices["1"] = self._get_xprv
             choices["8"] = self._send
-        choice = input()
-        while choice not in choices:
-            choice = input("invalid choice, please enter again: \n")
+        choice = self.__ask_for(
+            error_message="Invalid choice, please input again: \n",
+            criterion=lambda c: c in choices
+        )
         self._current = choices[choice]
 
     def _get_xprv(self):
@@ -159,10 +156,10 @@ class TerminalFSM:
         self.__press_any_key_to_return_to_main()
 
     def _send(self):
-        dst_addr = input("Please input the destination address: \n")
+        dst_addr = self.__ask_for("Please input the destination address: \n")
         src_addr = self.__ask_for(
-            standard_query="Please input your source address \n",
-            error_warning="This is not one of your address, please enter again: \n",
+            query_message="Please input your source address: \n",
+            error_message="This is not one of your address, please input again: \n",
             criterion=lambda s: s in self._wallet.receive_keys or s in self._wallet.change_keys
         )
         if src_addr:
@@ -172,11 +169,34 @@ class TerminalFSM:
         #     self.__send_to()
         self.__press_any_key_to_return_to_main()
 
+    @staticmethod
+    def __prompt_user_input():
+        return input(">> ")
+
+    @staticmethod
+    def __ask_for(query_message: str = "", error_message: str = "", criterion=lambda _input: True):
+        print(query_message, end="")
+        while True:
+            _input = TerminalFSM.__prompt_user_input()
+            if criterion(_input):
+                return _input
+            else:
+                print(error_message, end="")
+
+    @staticmethod
+    def __ask_for_path():
+        # todo: add default to improve convenience
+        return TerminalFSM.__ask_for(
+            query_message="Please input the BIP32 derivation path: \n",
+            error_message="Invalid derivation path, please input again: \n",
+            criterion=Inputs.PATH.criterion
+        )
+
     def __send_from(self, src, dst):
         key = self._wallet[src]
         amount = self.__ask_for(
-            "Please input the amount to send \n",
-            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address. Please Enter again: \n",
+            "Please input the amount to send: \n",
+            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address. Please input again: \n",
             criterion=lambda a: int(a) < key.balance,
         )
         txid = key.send([(dst, amount, 'satoshi')])
@@ -185,22 +205,6 @@ class TerminalFSM:
     def __send_to(self, dst):
         pass
 
-    @staticmethod
-    def __ask_for(standard_query: str, error_warning: str, criterion):
-        answer = input(standard_query)
-        while not criterion(answer):
-            answer = input(error_warning)
-        return answer
-
-    @staticmethod
-    def __ask_for_path():
-        # todo: add default to improve convenience
-        return TerminalFSM.__ask_for(
-            standard_query="Please input the BIP32 derivation path: \n",
-            error_warning="Invalid derivation path, please enter again: \n",
-            criterion=Inputs.PATH.criterion
-        )
-
     def __press_any_key_to_return_to_main(self):
-        input("Press Enter to return\n")
+        input("Press Enter to return to the main menu")
         self._current = self._main_menu
