@@ -122,14 +122,12 @@ class TerminalFSM:
         # todo: warning and confirmation
         print("Your extended private key is: ")
         print(self._wallet.xprv)
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _get_xpub(self):
         print("Your extended public key is: ")
         print(self._wallet.xpub)
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _get_addresses_and_balances(self):
         print("Receive addresses: ")
@@ -138,32 +136,27 @@ class TerminalFSM:
         print("Change addresses: ")
         for addr, key in self._wallet.change_keys.items():
             print(addr, key.balance)
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _get_transactions(self):
         for tx in self._wallet.transactions:
             print(tx)
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _get_unspents(self):
         for usp in self._wallet.unspents:
             print(usp)
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _refresh_transactions(self):
         self._wallet.refresh_transactions()
         print("Transactions refreshed. ")
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _refresh_unspents(self):
         self._wallet.refresh_unspents()
         print("Unspents refreshed. ")
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def _send(self):
         dst_addr = input("Please input the destination address: \n")
@@ -177,8 +170,7 @@ class TerminalFSM:
         # todo: support combination payment in the other branch
         # else:
         #     self.__send_to()
-        input("Press any key to return\n")
-        self._current = self._main_menu
+        self.__press_any_key_to_return_to_main()
 
     def __send_from(self, src, dst):
         key = self._wallet[src]
@@ -208,3 +200,7 @@ class TerminalFSM:
             error_warning="Invalid derivation path, please enter again: \n",
             criterion=Inputs.PATH.criterion
         )
+
+    def __press_any_key_to_return_to_main(self):
+        input("Press Enter to return\n")
+        self._current = self._main_menu
