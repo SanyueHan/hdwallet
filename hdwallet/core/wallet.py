@@ -6,7 +6,7 @@ from mnemonic import Mnemonic
 
 from hdwallet.configs import DERIVATION_ADDRESS_NUMBER
 from hdwallet.core.key import Key
-from hdwallet.core.utils import multithreading_execute
+from hdwallet.utils import multithreading_execute
 
 
 MNEMO = Mnemonic("english")

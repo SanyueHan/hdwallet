@@ -10,7 +10,7 @@ from bitsv.transaction import OP_DUP, OP_HASH160, OP_PUSH_20, OP_EQUALVERIFY, OP
 from coincurve import PublicKey, PrivateKey
 
 from hdwallet.configs import USP_CACHE_DIR
-from hdwallet.core.errors import PubKeyUsedAsPrvKeyError
+from hdwallet.errors import PubKeyUsedAsPrvKeyError
 from hdwallet.core.network import NETWORK_API
 
 
