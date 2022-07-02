@@ -37,11 +37,7 @@ class Wallet:
         raise KeyError
 
     @property
-    def is_private(self):
-        return not self.__master_key.public
-
-    @property
-    def is_public(self):
+    def is_watch_wallet(self):
         return self.__master_key.public
 
     @property

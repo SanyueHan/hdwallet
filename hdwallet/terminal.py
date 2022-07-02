@@ -4,6 +4,16 @@ from hdwallet.core.wallet import Wallet
 from hdwallet.inputs import Inputs
 
 
+def check_wallet_type(method):
+    def method_checked(self, *args, **kwargs):
+        if self._wallet.is_watch_wallet:
+            print("Watch wallet doesn't support this operation")
+            self._current = self._main_menu
+        else:
+            return method(self, *args, **kwargs)
+    return method_checked
+
+
 class TerminalFSM:
     """
     The interaction program (Finite State Machine) between User and Wallet in terminal
@@ -87,34 +97,32 @@ class TerminalFSM:
 
     def _main_menu(self):
         print("Enter 0 to go back")
-        if self._wallet.is_private:
-            print("Enter 1 to get xprv")
+        print("Enter 1 to get xprv")
         print("Enter 2 to get xpub")
         print("Enter 3 to get transactions")
         print("Enter 4 to get unspent transactions")
         print("Enter 5 to get addresses and balances")
         print("Enter 6 to refresh transactions")
         print("Enter 7 to refresh unspent transactions")
-        if self._wallet.is_private:
-            print("Enter 8 to send bitcoins")
+        print("Enter 8 to send bitcoins")
         choices = {
             "0": self._start,
+            "1": self._get_xprv,
             "2": self._get_xpub,
             "3": self._get_transactions,
             "4": self._get_unspents,
             "5": self._get_addresses_and_balances,
             "6": self._refresh_transactions,
             "7": self._refresh_unspents,
+            "8": self._send
         }
-        if self._wallet.is_private:
-            choices["1"] = self._get_xprv
-            choices["8"] = self._send
         choice = self.__ask_for(
             error_message="Invalid choice, please input again: \n",
             criterion=lambda c: c in choices
         )
         self._current = choices[choice]
 
+    @check_wallet_type
     def _get_xprv(self):
         # todo: warning and confirmation
         print("Your extended private key is: ")
@@ -155,6 +163,7 @@ class TerminalFSM:
         print("Unspents refreshed. ")
         self.__press_any_key_to_return_to_main()
 
+    @check_wallet_type
     def _send(self):
         dst_addr = self.__ask_for("Please input the destination address: \n")
         src_addr = self.__ask_for(
