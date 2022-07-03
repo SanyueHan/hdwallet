@@ -1,7 +1,7 @@
 import itertools
 from typing import Dict
 
-from bip32utils import BIP32Key, BIP32_HARDEN
+from bip_utils import Bip32Secp256k1
 from mnemonic import Mnemonic
 
 from hdwallet.configs import DERIVATION_ADDRESS_NUMBER
@@ -14,20 +14,22 @@ MNEMO = Mnemonic("english")
 
 class Wallet:
 
-    def __init__(self, master_key: BIP32Key):
-        self.__master_key: BIP32Key = master_key
+    def __init__(self, master_key: Bip32Secp256k1):
+        self.__master_key: Bip32Secp256k1 = master_key
         self.__receive_keys: Dict[str, Key] = {}
         self.__change_keys: Dict[str, Key] = {}
         for i, key_chain in enumerate([self.__receive_keys, self.__change_keys]):
             derived_key = self.__master_key.ChildKey(i)
             for j in range(DERIVATION_ADDRESS_NUMBER):
                 child_key = derived_key.ChildKey(j)
-                if child_key.public:
-                    pub_key_bytes = child_key.PublicKey()
-                    key_chain[child_key.Address()] = Key(pub_key_bytes, is_public=True)
+                if child_key.IsPublicOnly():
+                    pub_key_bytes = child_key.PublicKey().RawCompressed().m_data_bytes
+                    pub_key = Key(pub_key_bytes, is_public=True)
+                    key_chain[pub_key.address] = pub_key
                 else:
-                    prv_key_bytes = child_key.PrivateKey()
-                    key_chain[child_key.Address()] = Key(prv_key_bytes, is_public=False)
+                    prv_key_bytes = child_key.PrivateKey().Raw().m_data_bytes
+                    prv_key = Key(prv_key_bytes, is_public=False)
+                    key_chain[prv_key.address] = prv_key
 
     def __getitem__(self, addr) -> Key:
         if key := self.__receive_keys.get(addr):
@@ -38,15 +40,15 @@ class Wallet:
 
     @property
     def is_watch_wallet(self):
-        return self.__master_key.public
+        return self.__master_key.IsPublicOnly()
 
     @property
     def xprv(self):
-        return self.__master_key.ExtendedKey(private=True)
+        return self.__master_key.PrivateKey().ToExtended()
 
     @property
     def xpub(self):
-        return self.__master_key.ExtendedKey(private=False)
+        return self.__master_key.PublicKey().ToExtended()
 
     @property
     def receive_keys(self):
@@ -70,27 +72,15 @@ class Wallet:
 
     @classmethod
     def from_xpub(cls, valid_xpub: str):
-        return cls(BIP32Key.fromExtendedKey(valid_xpub, public=True))
+        return cls(Bip32Secp256k1.FromExtendedKey(valid_xpub))
 
     @classmethod
     def from_xprv(cls, valid_xprv: str):
-        return cls(BIP32Key.fromExtendedKey(valid_xprv, public=False))
+        return cls(Bip32Secp256k1.FromExtendedKey(valid_xprv))
 
     @classmethod
     def from_seed(cls, valid_seed: bytes, valid_path: str):
-        root_key = BIP32Key.fromEntropy(valid_seed)
-
-        deriving_key = root_key
-        index_list = valid_path.split('/')
-        index_list.pop(0)  # pop m
-        while index_list:
-            _index = index_list.pop(0)
-            if _index[-1] == "'":
-                index = int(_index[:-1]) + BIP32_HARDEN
-            else:
-                index = int(_index)
-            deriving_key = deriving_key.ChildKey(index)
-        return cls(deriving_key)
+        return cls(Bip32Secp256k1.FromSeedAndPath(valid_seed, valid_path))
 
     @classmethod
     def from_mnemonic(cls, valid_mnemonic_words: str, valid_passphrase: str, valid_path: str):
