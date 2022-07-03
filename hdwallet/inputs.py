@@ -22,6 +22,7 @@ class Inputs(Enum):
     SEED = re.compile(r"([0123456789abcdef][0123456789abcdef]){64,}").fullmatch, "https://river.com/learn/terms/s/seed-bitcoin/"
     MNEMONIC = is_valid_mnemonic, "https://river.com/learn/terms/m/mnemonic/"
     PATH = re.compile(r"m(/\d+'?)+").fullmatch, "https://river.com/learn/terms/d/derivation-path/"
+    AMOUNT = re.compile(r"\d+").fullmatch, ""
 
     def __init__(self, criterion, reference):
         self._criterion = criterion

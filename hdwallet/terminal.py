@@ -1,4 +1,5 @@
 from typing import Union
+from bitsv.exceptions import InsufficientFunds
 
 from hdwallet.core.wallet import Wallet
 from hdwallet.inputs import Inputs
@@ -104,7 +105,8 @@ class TerminalFSM:
         print("Enter 5 to get addresses and balances")
         print("Enter 6 to refresh transactions")
         print("Enter 7 to refresh unspent transactions")
-        print("Enter 8 to send bitcoins")
+        print("Enter 8 for simple payment")
+        print("Enter 9 for combination payment")
         choices = {
             "0": self._start,
             "1": self._get_xprv,
@@ -114,7 +116,8 @@ class TerminalFSM:
             "5": self._get_addresses_and_balances,
             "6": self._refresh_transactions,
             "7": self._refresh_unspents,
-            "8": self._send
+            "8": self._simple_pay,
+            "9": self._combination_pay
         }
         choice = self.__ask_for(
             error_message="Invalid choice, please input again: \n",
@@ -164,18 +167,39 @@ class TerminalFSM:
         self.__press_any_key_to_return_to_main()
 
     @check_wallet_type
-    def _send(self):
-        dst_addr = self.__ask_for("Please input the destination address: \n")
-        src_addr = self.__ask_for(
-            query_message="Please input your source address: \n",
-            error_message="This is not one of your address, please input again: \n",
-            criterion=lambda s: s in self._wallet.receive_keys or s in self._wallet.change_keys
-        )
-        if src_addr:
-            self.__send_from(src_addr, dst_addr)
-        # todo: support combination payment in the other branch
-        # else:
-        #     self.__send_to()
+    def _simple_pay(self):
+        while True:
+            dst_addr = self.__ask_for("Please input the destination address: \n")
+            src_addr = self.__ask_for(
+                query_message="Please input your source address: \n",
+                error_message="This is not one of your address, please input again: \n",
+                criterion=lambda s: s in self._wallet.receive_keys or s in self._wallet.change_keys
+            )
+            amount = self.__ask_for(
+                "Please input the amount to send (Satoshi): \n",
+                "Amount should be a positive integer. Please input again: \n",
+                criterion=lambda a: Inputs.AMOUNT.criterion,
+            )
+            try:
+                txid = self._wallet.simple_send(src_addr, dst_addr, amount)
+                print(f"Successfully sent {amount} satoshi from {src_addr} to {dst_addr},\n"
+                      f"transaction id is: {txid}")
+                self.__press_any_key_to_return_to_main()
+                break
+            except InsufficientFunds as e:
+                print(e)
+                solution = self.__ask_for(
+                    query_message="Enter 0 to cancel payment or 1 to retype the source/amount: \n",
+                    error_message="Invalid choice, please input again: \n",
+                    criterion=lambda i: i == "0" or i == "1"
+                )
+                if solution == "0":
+                    self._current = self._main_menu
+                    break
+
+    @check_wallet_type
+    def _combination_pay(self):
+        print("combination payment is not implemented yet")
         self.__press_any_key_to_return_to_main()
 
     @staticmethod
@@ -200,19 +224,6 @@ class TerminalFSM:
             error_message="Invalid derivation path, please input again: \n",
             criterion=Inputs.PATH.criterion
         )
-
-    def __send_from(self, src, dst):
-        key = self._wallet[src]
-        amount = self.__ask_for(
-            "Please input the amount to send: \n",
-            f"Insufficient funds, you could pay {key.balance} satoshi at most from this address. Please input again: \n",
-            criterion=lambda a: int(a) < key.balance,
-        )
-        txid = key.send([(dst, amount, 'satoshi')])
-        print(f"Successfully sent {amount} satoshi to {dst}, transaction id is: {txid}")
-
-    def __send_to(self, dst):
-        pass
 
     def __press_any_key_to_return_to_main(self):
         input("Press Enter to return to the main menu")

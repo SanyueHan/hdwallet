@@ -31,13 +31,6 @@ class Wallet:
                     prv_key = Key(prv_key_bytes, is_public=False)
                     key_chain[prv_key.address] = prv_key
 
-    def __getitem__(self, addr) -> Key:
-        if key := self.__receive_keys.get(addr):
-            return key
-        if key := self.__change_keys.get(addr):
-            return key
-        raise KeyError
-
     @property
     def is_watch_wallet(self):
         return self.__master_key.IsPublicOnly()
@@ -92,3 +85,9 @@ class Wallet:
 
     def refresh_unspents(self):
         multithreading_execute([key.refresh_unspents for key in self.__all_keys])
+
+    def simple_send(self, src, dst, amount) -> str:
+        if key := self.__receive_keys.get(src, self.__change_keys.get(src)):
+            return key.send([(dst, amount, 'satoshi')])
+        else:
+            raise KeyError(f"No corresponding key found for address: {src}")
