@@ -44,12 +44,20 @@ class Wallet:
         return self.__master_key.PublicKey().ToExtended()
 
     @property
-    def receive_keys(self):
-        return self.__receive_keys
+    def receive_addresses(self):
+        return self.__receive_keys.keys()
 
     @property
-    def change_keys(self):
-        return self.__change_keys
+    def receive_addresses_and_balances(self):
+        return ((addr, key.balance) for addr, key in self.__receive_keys.items())
+
+    @property
+    def change_addresses(self):
+        return self.__change_keys.keys()
+
+    @property
+    def change_addresses_and_balances(self):
+        return ((addr, key.balance) for addr, key in self.__change_keys.items())
 
     @property
     def __all_keys(self):

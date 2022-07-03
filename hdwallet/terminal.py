@@ -139,11 +139,11 @@ class TerminalFSM:
 
     def _get_addresses_and_balances(self):
         print("Receive addresses: ")
-        for addr, key in self._wallet.receive_keys.items():
-            print(addr, key.balance)
+        for address, balance in self._wallet.receive_addresses_and_balances:
+            print(address, balance)
         print("Change addresses: ")
-        for addr, key in self._wallet.change_keys.items():
-            print(addr, key.balance)
+        for address, balance in self._wallet.change_addresses_and_balances:
+            print(address, balance)
         self.__press_any_key_to_return_to_main()
 
     def _get_transactions(self):
@@ -173,7 +173,7 @@ class TerminalFSM:
             src_addr = self.__ask_for(
                 query_message="Please input your source address: \n",
                 error_message="This is not one of your address, please input again: \n",
-                criterion=lambda s: s in self._wallet.receive_keys or s in self._wallet.change_keys
+                criterion=lambda s: s in self._wallet.receive_addresses or s in self._wallet.change_addresses
             )
             amount = self.__ask_for(
                 "Please input the amount to send (Satoshi): \n",
